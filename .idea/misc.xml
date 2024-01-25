@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.10 (retail-etl-gcp)" />
+  </component>
   <component name="GithubDefaultAccount">
     <option name="defaultAccountId" value="9596fcb8-9496-44f0-96d5-d5682e7f16af" />
   </component>
