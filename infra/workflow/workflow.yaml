@@ -1,0 +1,86 @@
+main:
+  steps:
+    - init:
+        assign:
+          - raw_bq_create_disposition: "CREATE_NEVER"
+          - raw_bq_write_disposition: "WRITE_TRUNCATE"
+          - dataset: "retail_dsy"
+          - project_id: "retail-etl"
+          - raw_files_source_uri: "gs://retail-etl-dsy/dataset/"
+
+    - load-countries-to-bigquery :
+        call: googleapis.bigquery.v2.jobs.insert
+        args:
+          projectId: ${project_id}
+          body:
+            configuration:
+              load:
+                sourceUris: ${raw_files_source_uri+"countries.csv"}
+                destinationTable:
+                  projectId: ${project_id}
+                  datasetId: ${dataset}
+                  tableId: "raw_country"
+                skipLeadingRows: 1
+                schema:
+                  fields:
+                    - name: "id"
+                      type: "STRING"
+                    - name: "iso"
+                      type: "STRING"
+                    - name: "name"
+                      type: "STRING"
+                    - name: "nicename"
+                      type: "STRING"
+                    - name: "iso3"
+                      type: "STRING"
+                    - name: "numcode"
+                      type: "STRING"
+                    - name: "phonecode"
+                      type: "STRING"
+                createDisposition: ${raw_bq_create_disposition}
+                writeDisposition: ${raw_bq_write_disposition}
+        result: loadCountryRawToBqResult
+
+    - load-invoices-to-bigquery :
+        call: googleapis.bigquery.v2.jobs.insert
+        args:
+          projectId: ${project_id}
+          body:
+            configuration:
+              load:
+                sourceUris: ${raw_files_source_uri+"invoices.csv"}
+                destinationTable:
+                  projectId: ${project_id}
+                  datasetId: ${dataset}
+                  tableId: "raw_invoice"
+                skipLeadingRows: 1
+                schema:
+                  fields:
+                    - name: "InvoiceNo"
+                      type: "STRING"
+                    - name: "StockCode"
+                      type: "STRING"
+                    - name: "Description"
+                      type: "STRING"
+                    - name: "Quantity"
+                      type: "STRING"
+                    - name: "InvoiceDate"
+                      type: "STRING"
+                    - name: "UnitPrice"
+                      type: "STRING"
+                    - name: "CustomerID"
+                      type: "STRING"
+                    - name: "Country"
+                      type: "STRING"
+                createDisposition: ${raw_bq_create_disposition}
+                writeDisposition: ${raw_bq_write_disposition}
+        result: loadInvoiceRawToBqResult
+    # call api in cloud run to trigger dbt
+    - trigger-dbt:
+        call: http.get
+        args:
+          url: "https://retail-etl-dbt-gsiuw4r4uq-ew.a.run.app/run"
+        result: dbtResult
+
+    - returnResult:
+        return: ${dbtResult}

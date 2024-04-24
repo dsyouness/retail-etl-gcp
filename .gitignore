@@ -16,8 +16,5 @@ infra/*.json
 infa/terraform.plan
 infra/.terraform.lock.hcl
 
-include/dbt/dbt_packages
-include/dbt/target
-include/dbt/logs
 
 
