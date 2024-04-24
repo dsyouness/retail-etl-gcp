@@ -1,0 +1,3 @@
+[submodule "dbt-etl"]
+    path = dbt-etl
+    url = https://github.com/dsyouness/retail-etl-dbt.git
