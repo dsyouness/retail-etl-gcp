@@ -6,7 +6,7 @@ terraform {
     }
   }
 }
+
 provider "google" {
-  project     = "retail-etl"
-  credentials = file("retail-etl-5d649fa6a1f8.json")
+  project = var.project_id
 }

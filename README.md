@@ -31,3 +31,31 @@ Contact
 
 * [LinkedIn](https://www.linkedin.com/in/dsyouness/)
 * [Medium](https://medium.com/@y.drissislimani)
+
+Terraform state distant (GCS)
+============================
+
+Le state Terraform est prévu pour être stocké dans un bucket GCS via `infra/backend.tf`.
+
+1. Créer le bucket de state (bootstrap, une seule fois) :
+
+`gcloud storage buckets create gs://<TF_STATE_BUCKET> --location=EU --uniform-bucket-level-access`
+
+2. Initialiser Terraform avec le backend GCS :
+
+`terraform -chdir=infra init -backend-config="bucket=<TF_STATE_BUCKET>" -backend-config="prefix=terraform/infra" -migrate-state`
+
+3. Vérifier le plan :
+
+`terraform -chdir=infra plan`
+
+Cloud Build pour créer l'infra Terraform
+========================================
+
+Un pipeline `cloudbuild.yaml` a été ajouté pour exécuter `terraform init`, `plan`, puis `apply`.
+
+Exemple d'exécution:
+
+`gcloud builds submit --config=cloudbuild.yaml --substitutions=_TF_STATE_BUCKET=<TF_STATE_BUCKET>,_TF_STATE_PREFIX=terraform/infra`
+
+Le pipeline injecte `project_id` via `${PROJECT_ID}`.
