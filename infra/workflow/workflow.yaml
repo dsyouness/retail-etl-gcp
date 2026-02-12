@@ -5,7 +5,9 @@ main:
           - raw_bq_create_disposition: "CREATE_NEVER"
           - raw_bq_write_disposition: "WRITE_TRUNCATE"
           - dataset: "retail_dsy"
-          - project_id: "retail-etl"
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: "europe-west1"
+          - dbt_job_name: "retail-etl-dbt-job"
           - raw_files_source_uri: "gs://retail-etl-dsy/dataset/"
 
     - load-countries-to-bigquery :
@@ -75,12 +77,14 @@ main:
                 createDisposition: ${raw_bq_create_disposition}
                 writeDisposition: ${raw_bq_write_disposition}
         result: loadInvoiceRawToBqResult
-    # call api in cloud run to trigger dbt
-    - trigger-dbt:
-        call: http.get
+    # execute Cloud Run job to trigger dbt
+    - trigger-dbt-job:
+        call: http.post
         args:
-          url: "https://retail-etl-dbt-gsiuw4r4uq-ew.a.run.app/run"
-        result: dbtResult
+          url: ${"https://run.googleapis.com/v2/projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job_name + ":run"}
+          auth:
+            type: OAuth2
+        result: dbtJobResult
 
     - returnResult:
-        return: ${dbtResult}
+        return: ${dbtJobResult}

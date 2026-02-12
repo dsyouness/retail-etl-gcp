@@ -15,7 +15,8 @@ resource "google_workflows_workflow" "workflow" {
   name            = "retail-dsy-workflow"
   description     = "Retail Dataset Workflow"
   source_contents = local.workflow_yaml
-  region          = "europe-west1"
+  region          = var.region
+  service_account = google_service_account.service_account.email
 }
 # terraform to create table in bigquery
 resource "google_bigquery_table" "raw_country" {
@@ -98,6 +99,12 @@ resource "google_project_service" "service" {
   service = "iam.googleapis.com"
 }
 
+
+# terraform to enable Cloud Run API
+resource "google_project_service" "cloud_run_api" {
+  service = "run.googleapis.com"
+}
+
 # terraform to create service account
 resource "google_service_account" "service_account" {
   account_id   = "retail-etl-sa"
@@ -125,6 +132,40 @@ resource "google_project_iam_member" "eventarc_admin" {
   member  = "serviceAccount:${google_service_account.service_account.email}"
 }
 
+
+
+# terraform to create Cloud Run Job to execute dbt with BigQuery
+resource "google_cloud_run_v2_job" "dbt" {
+  name     = var.dbt_job_name
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.service_account.email
+      max_retries     = 1
+      timeout         = "1800s"
+
+      containers {
+        image = var.dbt_image
+        args  = ["run"]
+      }
+    }
+  }
+}
+
+# terraform to grant Cloud Run Job runner to service account
+resource "google_project_iam_member" "run_job_runner" {
+  project = var.project_id
+  role    = "roles/run.jobsRunner"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+# terraform to grant Cloud Run developer role to service account
+resource "google_project_iam_member" "run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
+}
 
 resource "google_eventarc_trigger" "trigger" {
   name            = "retail-dsy-trigger"
