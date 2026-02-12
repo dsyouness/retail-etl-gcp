@@ -105,6 +105,11 @@ resource "google_project_service" "cloud_run_api" {
   service = "run.googleapis.com"
 }
 
+# terraform to enable Cloud Build API
+resource "google_project_service" "cloudbuild_api" {
+  service = "cloudbuild.googleapis.com"
+}
+
 # terraform to create service account
 resource "google_service_account" "service_account" {
   account_id   = "retail-etl-sa"
@@ -182,5 +187,26 @@ resource "google_eventarc_trigger" "trigger" {
 
   destination {
     workflow = google_workflows_workflow.workflow.id
+  }
+}
+
+# terraform to create Cloud Build trigger for all git branches
+resource "google_cloudbuild_trigger" "terraform_all_branches" {
+  name        = var.cloudbuild_trigger_name
+  description = "Run Terraform pipeline on every branch push"
+
+  github {
+    owner = var.github_owner
+    name  = var.github_repo_name
+    push {
+      branch = var.cloudbuild_trigger_branch_regex
+    }
+  }
+
+  filename = "cloudbuild.yaml"
+
+  substitutions = {
+    _TF_STATE_BUCKET = var.tf_state_bucket
+    _TF_STATE_PREFIX = var.tf_state_prefix
   }
 }

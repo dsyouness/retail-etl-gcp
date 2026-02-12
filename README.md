@@ -59,3 +59,22 @@ Exemple d'exécution:
 `gcloud builds submit --config=cloudbuild.yaml --substitutions=_TF_STATE_BUCKET=<TF_STATE_BUCKET>,_TF_STATE_PREFIX=terraform/infra`
 
 Le pipeline injecte `project_id` via `${PROJECT_ID}`.
+
+
+Trigger Cloud Build sur chaque branche
+======================================
+
+Terraform crée un trigger Cloud Build qui lance `cloudbuild.yaml` sur chaque push de branche (regex `.*`).
+
+Variables à fournir pour le trigger:
+
+- `github_owner` (owner/org GitHub)
+- `github_repo_name` (nom du repo)
+
+Exemple:
+
+`terraform -chdir=infra apply -var="github_owner=<OWNER>" -var="github_repo_name=<REPO>"`
+
+Le build se lance sur toutes les branches, mais `terraform apply` est exécuté uniquement sur `main`.
+
+Le trigger passe aussi `_TF_STATE_BUCKET` et `_TF_STATE_PREFIX` depuis les variables Terraform `tf_state_bucket` et `tf_state_prefix`.

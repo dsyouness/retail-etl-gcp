@@ -19,12 +19,18 @@ steps:
       - terraform plan -var="project_id=${PROJECT_ID}" -out=tfplan
 
   - name: hashicorp/terraform:1.6.6
-    id: terraform-apply
+    id: terraform-apply-main-only
     dir: infra
     entrypoint: sh
     args:
       - -c
-      - terraform apply -auto-approve tfplan
+      - |
+        if [ "${BRANCH_NAME}" = "main" ]; then
+          echo "Main branch detected -> terraform apply"
+          terraform apply -auto-approve tfplan
+        else
+          echo "Branch ${BRANCH_NAME} detected -> skipping terraform apply"
+        fi
 
 substitutions:
   _TF_STATE_BUCKET: retail-etl-tfstate
