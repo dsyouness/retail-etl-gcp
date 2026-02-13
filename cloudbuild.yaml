@@ -17,12 +17,8 @@ steps:
     args:
       - -c
       - |
-        if [ "${BRANCH_NAME}" = "master" ]; then
-          echo "Main branch detected -> apply AR repo"
-          terraform apply -auto-approve -target=google_artifact_registry_repository.dbt_images
-        else
-          echo "Branch ${BRANCH_NAME} detected -> skipping AR repo apply"
-        fi
+        echo "Apply AR repo"
+        terraform apply -auto-approve -target=google_artifact_registry_repository.dbt_images
 
   - name: gcr.io/cloud-builders/gcloud
     id: configure-docker
