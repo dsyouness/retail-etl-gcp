@@ -50,12 +50,7 @@ steps:
     entrypoint: sh
     args:
       - -c
-      - terraform plan \
-          -var="project_id=${PROJECT_ID}" \
-          -var="github_owner=${_GITHUB_OWNER}" \
-          -var="github_repo_name=${_GITHUB_REPO}" \
-          -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${_DBT_IMAGE_TAG}" \
-          -out=tfplan
+      - terraform plan -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${_DBT_IMAGE_TAG}" -out=tfplan
 
   - name: hashicorp/terraform:1.6.6
     id: terraform-apply-main-only
@@ -66,11 +61,7 @@ steps:
       - |
         if [ "${BRANCH_NAME}" = "master" ]; then
           echo "Main branch detected -> terraform apply"
-          terraform apply -auto-approve \
-            -var="project_id=${PROJECT_ID}" \
-            -var="github_owner=${_GITHUB_OWNER}" \
-            -var="github_repo_name=${_GITHUB_REPO}" \
-            tfplan
+          terraform apply -auto-approve -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" tfplan
         else
           echo "Branch ${BRANCH_NAME} detected -> skipping terraform apply"
         fi
