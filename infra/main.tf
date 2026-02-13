@@ -110,6 +110,19 @@ resource "google_project_service" "cloudbuild_api" {
   service = "cloudbuild.googleapis.com"
 }
 
+# terraform to enable Artifact Registry API
+resource "google_project_service" "artifact_registry_api" {
+  service = "artifactregistry.googleapis.com"
+}
+
+# terraform to create Artifact Registry Docker repository for dbt images
+resource "google_artifact_registry_repository" "dbt_images" {
+  location      = var.region
+  repository_id = var.ar_repo_name
+  description   = "dbt images"
+  format        = "DOCKER"
+}
+
 # terraform to create service account
 resource "google_service_account" "service_account" {
   account_id   = "retail-etl-sa"

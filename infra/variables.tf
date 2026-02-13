@@ -58,3 +58,8 @@ variable "tf_state_prefix" {
   description = "Prefix/path used in GCS backend for Terraform state"
 }
 
+variable "ar_repo_name" {
+  type        = string
+  default     = "dbt-images"
+  description = "Artifact Registry Docker repo for dbt images"
+}
