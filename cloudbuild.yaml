@@ -39,7 +39,7 @@ steps:
       - |
         set -e
         DEST_IMAGE="${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_JOB_IMAGE_NAME}:${_DBT_JOB_IMAGE_TAG}"
-        docker build -f dbt-code/Dockerfile -t "$${DEST_IMAGE}" dbt-etl
+        docker build -f dbt-code/Dockerfile -t "$${DEST_IMAGE}" dbt-code
         docker push "$${DEST_IMAGE}"
 
   - name: hashicorp/terraform:1.6.6
