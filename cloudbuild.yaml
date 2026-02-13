@@ -59,7 +59,7 @@ steps:
       - -c
       - |
         echo "Terraform apply"
-        terraform apply -auto-approve -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" tfplan
+        terraform apply -auto-approve tfplan
 
 substitutions:
   _TF_STATE_BUCKET: retail-etl-tfstate
