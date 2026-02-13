@@ -159,10 +159,11 @@ resource "google_cloud_run_v2_job" "dbt" {
 }
 
 # terraform to grant Cloud Run Job runner to service account
-resource "google_project_iam_member" "run_job_runner" {
-  project = var.project_id
-  role    = "roles/run.jobsRunner"
-  member  = "serviceAccount:${google_service_account.service_account.email}"
+resource "google_cloud_run_v2_job_iam_member" "run_job_runner" {
+  name     = google_cloud_run_v2_job.dbt.name
+  location = google_cloud_run_v2_job.dbt.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 # terraform to grant Cloud Run developer role to service account
