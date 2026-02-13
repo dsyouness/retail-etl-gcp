@@ -33,5 +33,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   dbtetl:
     # Config indicated by + and applies to all files under models/example/
-    example:
+    transform:
+      +materialized: table
+    report:
       +materialized: view
