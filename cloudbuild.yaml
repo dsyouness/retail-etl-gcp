@@ -32,15 +32,14 @@ steps:
       - --quiet
 
   - name: gcr.io/cloud-builders/docker
-    id: copy-dbt-image
+    id: build-dbt-job-image
     entrypoint: bash
     args:
       - -c
       - |
         set -e
-        DEST_IMAGE="${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${_DBT_IMAGE_TAG}"
-        docker pull "${_DBT_IMAGE_SOURCE}"
-        docker tag "${_DBT_IMAGE_SOURCE}" "$${DEST_IMAGE}"
+        DEST_IMAGE="${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_JOB_IMAGE_NAME}:${_DBT_JOB_IMAGE_TAG}"
+        docker build -f dbt-etl/Dockerfile -t "$${DEST_IMAGE}" dbt-etl
         docker push "$${DEST_IMAGE}"
 
   - name: hashicorp/terraform:1.6.6
@@ -49,7 +48,7 @@ steps:
     entrypoint: sh
     args:
       - -c
-      - terraform plan -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${_DBT_IMAGE_TAG}" -out=tfplan
+      - terraform plan -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_JOB_IMAGE_NAME}:${_DBT_JOB_IMAGE_TAG}" -out=tfplan
 
   - name: hashicorp/terraform:1.6.6
     id: terraform-apply
@@ -65,9 +64,8 @@ substitutions:
   _TF_STATE_BUCKET: retail-etl-tfstate
   _AR_REGION: europe-west1
   _AR_REPO: dbt-images
-  _DBT_IMAGE_NAME: dbt-bigquery
-  _DBT_IMAGE_TAG: 1.8.2
-  _DBT_IMAGE_SOURCE: ghcr.io/dbt-labs/dbt-bigquery:1.8.2
+  _DBT_JOB_IMAGE_NAME: dbt-etl-job
+  _DBT_JOB_IMAGE_TAG: latest
   _GITHUB_OWNER: "dsyouness"
   _GITHUB_REPO: "retail-etl-gcp"
 
