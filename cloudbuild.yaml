@@ -11,20 +11,6 @@ steps:
           -backend-config="prefix=${_TF_STATE_PREFIX}"
 
   - name: gcr.io/cloud-builders/gcloud
-    id: ensure-ar-repo
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        set -e
-        if ! gcloud artifacts repositories describe "${_AR_REPO}" --location="${_AR_REGION}" >/dev/null 2>&1; then
-          gcloud artifacts repositories create "${_AR_REPO}" \
-            --location="${_AR_REGION}" \
-            --repository-format=docker \
-            --description="dbt images"
-        fi
-
-  - name: gcr.io/cloud-builders/gcloud
     id: configure-docker
     args:
       - auth
