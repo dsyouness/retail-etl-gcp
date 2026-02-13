@@ -41,8 +41,8 @@ steps:
         set -e
         DEST_IMAGE="${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${_DBT_IMAGE_TAG}"
         docker pull "${_DBT_IMAGE_SOURCE}"
-        docker tag "${_DBT_IMAGE_SOURCE}" "${DEST_IMAGE}"
-        docker push "${DEST_IMAGE}"
+        docker tag "${_DBT_IMAGE_SOURCE}" "$${DEST_IMAGE}"
+        docker push "$${DEST_IMAGE}"
 
   - name: hashicorp/terraform:1.6.6
     id: terraform-plan
