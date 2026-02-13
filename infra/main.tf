@@ -15,7 +15,8 @@ resource "google_workflows_workflow" "workflow" {
   name            = "retail-dsy-workflow"
   description     = "Retail Dataset Workflow"
   source_contents = local.workflow_yaml
-  region          = "europe-west1"
+  region          = var.region
+  service_account = google_service_account.service_account.email
 }
 # terraform to create table in bigquery
 resource "google_bigquery_table" "raw_country" {
@@ -98,6 +99,30 @@ resource "google_project_service" "service" {
   service = "iam.googleapis.com"
 }
 
+
+# terraform to enable Cloud Run API
+resource "google_project_service" "cloud_run_api" {
+  service = "run.googleapis.com"
+}
+
+# terraform to enable Cloud Build API
+resource "google_project_service" "cloudbuild_api" {
+  service = "cloudbuild.googleapis.com"
+}
+
+# terraform to enable Artifact Registry API
+resource "google_project_service" "artifact_registry_api" {
+  service = "artifactregistry.googleapis.com"
+}
+
+# terraform to create Artifact Registry Docker repository for dbt images
+resource "google_artifact_registry_repository" "dbt_images" {
+  location      = var.region
+  repository_id = var.ar_repo_name
+  description   = "dbt images"
+  format        = "DOCKER"
+}
+
 # terraform to create service account
 resource "google_service_account" "service_account" {
   account_id   = "retail-etl-sa"
@@ -126,6 +151,41 @@ resource "google_project_iam_member" "eventarc_admin" {
 }
 
 
+
+# terraform to create Cloud Run Job to execute dbt with BigQuery
+resource "google_cloud_run_v2_job" "dbt" {
+  name     = var.dbt_job_name
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.service_account.email
+      max_retries     = 1
+      timeout         = "1800s"
+
+      containers {
+        image = var.dbt_image
+        args  = ["run"]
+      }
+    }
+  }
+}
+
+# terraform to grant Cloud Run Job runner to service account
+resource "google_cloud_run_v2_job_iam_member" "run_job_runner" {
+  name     = google_cloud_run_v2_job.dbt.name
+  location = google_cloud_run_v2_job.dbt.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+# terraform to grant Cloud Run developer role to service account
+resource "google_project_iam_member" "run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
+}
+
 resource "google_eventarc_trigger" "trigger" {
   name            = "retail-dsy-trigger"
   location        = "eu"
@@ -141,5 +201,26 @@ resource "google_eventarc_trigger" "trigger" {
 
   destination {
     workflow = google_workflows_workflow.workflow.id
+  }
+}
+
+# terraform to create Cloud Build trigger for all git branches
+resource "google_cloudbuild_trigger" "terraform_all_branches" {
+  name        = var.cloudbuild_trigger_name
+  description = "Run Terraform pipeline on every branch push"
+
+  github {
+    owner = var.github_owner
+    name  = var.github_repo_name
+    push {
+      branch = var.cloudbuild_trigger_branch_regex
+    }
+  }
+
+  filename = "cloudbuild.yaml"
+
+  substitutions = {
+    _TF_STATE_BUCKET = var.tf_state_bucket
+    _TF_STATE_PREFIX = var.tf_state_prefix
   }
 }

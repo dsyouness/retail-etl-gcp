@@ -1,0 +1,73 @@
+steps:
+  - name: hashicorp/terraform:1.6.6
+    id: terraform-init
+    dir: infra
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        terraform init \
+          -backend-config="bucket=${_TF_STATE_BUCKET}"
+
+  - name: hashicorp/terraform:1.6.6
+    id: terraform-apply-ar-repo
+    dir: infra
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        echo "Apply AR repo"
+        terraform apply -auto-approve \
+          -var="project_id=${PROJECT_ID}" \
+          -var="github_owner=${_GITHUB_OWNER}" \
+          -var="github_repo_name=${_GITHUB_REPO}" \
+          -target=google_artifact_registry_repository.dbt_images
+
+  - name: gcr.io/cloud-builders/gcloud
+    id: configure-docker
+    args:
+      - auth
+      - configure-docker
+      - "${_AR_REGION}-docker.pkg.dev"
+      - --quiet
+
+  - name: gcr.io/cloud-builders/docker
+    id: build-dbt-job-image
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        DEST_IMAGE="${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_JOB_IMAGE_NAME}:${_DBT_JOB_IMAGE_TAG}"
+        docker build -f dbt-code/Dockerfile -t "$${DEST_IMAGE}" dbt-code
+        docker push "$${DEST_IMAGE}"
+
+  - name: hashicorp/terraform:1.6.6
+    id: terraform-plan
+    dir: infra
+    entrypoint: sh
+    args:
+      - -c
+      - terraform plan -var="project_id=${PROJECT_ID}" -var="github_owner=${_GITHUB_OWNER}" -var="github_repo_name=${_GITHUB_REPO}" -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_JOB_IMAGE_NAME}:${_DBT_JOB_IMAGE_TAG}" -out=tfplan
+
+  - name: hashicorp/terraform:1.6.6
+    id: terraform-apply
+    dir: infra
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        echo "Terraform apply"
+        terraform apply -auto-approve tfplan
+
+substitutions:
+  _TF_STATE_BUCKET: retail-etl-tfstate
+  _AR_REGION: europe-west1
+  _AR_REPO: dbt-images
+  _DBT_JOB_IMAGE_NAME: dbt-etl-job
+  _DBT_JOB_IMAGE_TAG: latest
+  _GITHUB_OWNER: "dsyouness"
+  _GITHUB_REPO: "retail-etl-gcp"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
